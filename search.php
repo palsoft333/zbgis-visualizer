@@ -90,19 +90,31 @@ function CheckLVs($link) {
         return $lvs;
     }
 }
+
+function CheckParcels($link, $name) {
+  Global $geo_urls, $names;
+  $parcelse = Connect($link);
+  $pce = json_decode($parcelse, true);
+  foreach ($pce["value"] as $item) {
+      $area = $item["Area"];
+      echo "<li>Parcela E č. <b>".$item["NoFull"]."</b> - celkovo ".$area." m<sup>2</sup></li>";
+      $geo_urls[] = $item["Id"];
+      $names[] = $name;
+  }
+  if(isset($pce["@odata.nextLink"])) CheckParcels($pce["@odata.nextLink"], $name);
+}
     
-function CheckParticipants($link, $area, $pid) {
-    Global $name, $shares;
+function CheckParticipants($link, $area, $name) {
     $particip = Connect($link);
     $part = json_decode($particip, true);
     foreach ($part["value"] as $item) {
         if($item["Name"]==$name) {
             $share = round(($area/$item["Denominator"])*$item["Numerator"],1);
-            $shares[$pid] = $share;
-            echo "(podiel ".$share." m<sup>2</sup>)";
+            return $share;
         }
     }
-    if(isset($part["@odata.nextLink"])) CheckParticipants($part["@odata.nextLink"], $area, $pid);
+    if(isset($part["@odata.nextLink"])) $share = CheckParticipants($part["@odata.nextLink"], $area, $name);
+    return $share;
 }
 
 if(isset($_GET["new"])) {
@@ -116,7 +128,10 @@ if(isset($_GET["getparcel"])) {
     foreach ($json["features"][0]["geometry"]["rings"][0] as $ring) {
         $rings[] = "[".$ring[1].", ".$ring[0]."]";
     }
-    echo '{"rings":['.implode(", ", $rings).'],"parcel":"'.$json["features"][0]["attributes"]["PARCEL_NUMBER"].'","area":"'.$json["features"][0]["attributes"]["DESCRIPTIVE_AREA_OF_PARCEL"].'"}';
+    $area = $json["features"][0]["attributes"]["DESCRIPTIVE_AREA_OF_PARCEL"];
+    $name = $_GET["name"];
+    $share = CheckParticipants('https://kataster.skgeodesy.sk/PortalODataPublic/ParcelsE('.$_GET["getparcel"].')/Kn.Participants?$filter=Type/Code%20eq%201&$select=Id,Name,ValidTo,Numerator,Denominator&$expand=OwnershipRecord($select=Order)&$orderby=OwnershipRecord/Order&$skip=0', $area, $name);
+    echo '{"rings":['.implode(", ", $rings).'],"parcel":"'.$json["features"][0]["attributes"]["PARCEL_NUMBER"].'","area":"'.$json["features"][0]["attributes"]["DESCRIPTIVE_AREA_OF_PARCEL"].'","share":"'.$share.'"}';
     exit;
 }
 
@@ -159,14 +174,7 @@ echo '
                             <h5 class="card-title">List vlastníctva č.'.$folio.'</h5>
                             <p class="card-text">'.$name.'</p>
                             <ul>';
-                    $parcelse = Connect('https://kataster.skgeodesy.sk/PortalODataPublic/ParcelsE?$filter=FolioId%20eq%20'.$item["OwnershipRecord"]["Folio"]["Id"].'&$select=Id,No,NoFull,Area&$orderby=NoSort&$skip=0');
-                    $pce = json_decode($parcelse, true);
-                    foreach ($pce["value"] as $item) {
-                        $area = $item["Area"];
-                        echo "<li>Parcela E č. <b>".$item["NoFull"]."</b> - celkovo ".$area." m<sup>2</sup></li>";
-                        CheckParticipants('https://kataster.skgeodesy.sk/PortalODataPublic/ParcelsE('.$item["Id"].')/Kn.Participants?$filter=Type/Code%20eq%201&$select=Id,Name,ValidTo,Numerator,Denominator&$expand=OwnershipRecord($select=Order)&$orderby=OwnershipRecord/Order&$skip=0', $area, $item["Id"]);
-                        $geo_urls[] = $item["Id"];
-                    }
+                              CheckParcels('https://kataster.skgeodesy.sk/PortalODataPublic/ParcelsE?$filter=FolioId%20eq%20'.$item["OwnershipRecord"]["Folio"]["Id"].'&$select=Id,No,NoFull,Area&$orderby=NoSort&$skip=0', $name);
                 echo '      </ul>
                           </div>
                         </div>
@@ -174,7 +182,7 @@ echo '
                 }
             }
             echo '</div>';
-            echo "<div id='progressbar' style='max-width: 360px; margin: 20px auto; padding: 10px;' class='border d-none shadow-sm'>
+            $map = "<div id='progressbar' style='max-width: 360px; margin: 20px auto; padding: 10px;' class='border d-none shadow-sm'>
                       <div id='warning' style='width:100%; max-width:360px; margin: 0 auto 5px auto;'>Načítavam údaje do mapy ...</div>
                       <div id='barbar' class='progress mdl-progress mdl-js-progress' style='width:100%; max-width:360px; margin:0 auto 5px auto;'>
                         <div class='progress-bar progress-bar-striped progress-bar-animated bg-info' style='width: 0%'></div>
@@ -187,16 +195,19 @@ echo '
                     <script>
                       var geo_urls = [";
                         foreach ($geo_urls as $url) {
-                            echo '\''.$url.'\', ';
+                            $map .= '\''.$url.'\', ';
                         }
-                      echo "];
-                      var shares = {";
-                        foreach ($shares as $key=>$share) {
-                            echo $key.": '".$share."', ";
+                      $map .= "];
+                      var names = [";
+                        $shares_sum=0;
+                        foreach ($names as $name_entry) {
+                            $map .= '\''.$name_entry.'\', ';
                         }
-                      echo "};
+                      $map .= "];
                     </script>
                     <div id='map' style='height: 1000px;'></div>";
+            echo '<div class="alert alert-info mt-4 shadow-sm text-center">Celkový podiel na E-parcelách: <b id="shares-sum">'.$shares_sum.'</b> m<sup>2</sup></div>';
+            echo $map;
         }
     }
     else {
@@ -310,8 +321,9 @@ echo '
           {
             //if(!loop) return;
             var url = teams[j];
+            var name = names[j];
             $.ajax({
-              url: 'search.php?getparcel='+url,
+              url: 'search.php?getparcel='+url+'&name='+name,
               beforeSend: function()
                 {
                 $("#warning").html("Načítavam parcelu "+por+" / "+poc);
@@ -342,7 +354,10 @@ echo '
                     {
                     var detail = JSON.parse(data);
                     var polygon = L.polygon(detail["rings"], {color: 'red'}).addTo(map);
-                    polygon.bindTooltip("<b>"+detail["parcel"]+"</b><br>Celková plocha: "+detail["area"]+"m<sup>2</sup><br>Podiel: "+shares[url]+"m<sup>2</sup>");
+                    polygon.bindTooltip("<b>"+detail["parcel"]+"</b><br>Celková plocha: "+detail["area"]+"m<sup>2</sup><br>Podiel: "+detail["share"]+"m<sup>2</sup>");
+                    var shares_sum = parseFloat($("#shares-sum").html());
+                    shares_sum=shares_sum+parseFloat(detail["share"]);
+                    $("#shares-sum").html(shares_sum);
                     }
               }
             });
