@@ -241,7 +241,7 @@ echo '
         </form>';
         }
         else {
-            $response = Connect("https://zbgis.skgeodesy.sk/mkzbgis/api/search/kataster/".$_SESSION["ku"]."/mu/".$_SESSION["ku"]."?q=".$_SESSION["surname"]."%20".$_SESSION["name"]);
+            $response = Connect("https://zbgis.skgeodesy.sk/mapka/api/search/kataster/".$_SESSION["ku"]."/mu/".$_SESSION["ku"]."?q=".$_SESSION["surname"]."%20".$_SESSION["name"]);
             $json = json_decode($response, true);
             
             echo '<div><a href="search.php?new=1" class="btn btn-primary mb-3">Nové hľadanie</a></div>
