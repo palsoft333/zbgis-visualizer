@@ -8,7 +8,7 @@ This tool allows visualization and pulls information of all "E-ground plots" for
 ## How to use it
 1. create empty file cookies.txt
 2. run search.php at your domain
-3. visit https://zbgis.skgeodesy.sk/mkzbgis/sk/kataster, click somewhere in the map and pass the captcha test
+3. visit [https://zbgis.skgeodesy.sk/mkzbgis/sk/kataster](https://zbgis.skgeodesy.sk/mapka/sk/kataster), click somewhere in the map and pass the captcha test
 4. copy the *.ESKN_RECAPTCHA* cookie from the developer console (in Google Chrome, press F12 key, select Application tab, Cookie files, zbgis.skgeodesy.sk), select&copy Cookie Value as shown below:
    
 ![eskn](https://github.com/palsoft333/zbgis-visualizer/assets/13525347/06d859e0-6767-4fbe-b243-0621473478e4)
