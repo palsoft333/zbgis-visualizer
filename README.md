@@ -27,4 +27,4 @@ This tool allows visualization and pulls information of all "E-ground plots" for
 ![map](https://github.com/palsoft333/zbgis-visualizer/assets/13525347/d6995675-46ca-4c6a-a65b-e2d5818246a3)
 
 If you like it:<br>
-<a href="https://www.buymeacoffee.com/palsoft"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a beer&emoji=🍺&slug=palsoft&button_colour=0091e6&font_colour=ffffff&font_family=Poppins&outline_colour=ffffff&coffee_colour=FFDD00"></a>
+<a href="https://www.buymeacoffee.com/palsoft" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
