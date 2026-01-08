@@ -1,3 +1,7 @@
+> [!WARNING]
+> zbgis-visualizer has been merged into a [new zbgis-visualiser](https://github.com/palsoft333/zbgis-visualiser) repository.
+> You can find the latest browser version inside the **zbgis-visualiser** repository, where it will continue to be developed.
+
 # zbgis-visualizer
 This tool allows visualization and pulls information of all "E-ground plots" for a given name and city in Slovak Cadastre of Real Estate (zbgis.skgeodesy.sk)
 
